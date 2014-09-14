@@ -1,0 +1,36 @@
+{
+  "name": "getaroomio_server",
+  "description": "FREE and hassle free audio/video real-time chat for desktop and mobile.",
+  "version": "0.1.0",
+  "homepage": "http://github.com/serrynaimo/getaroom_server",
+  "author": {
+    "name": "Thomas Gorissen",
+    "email": "mail@serrynaimo.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com/serrynaimo/getaroom_server.git"
+  },
+  "licenses": [
+    {
+      "type": "All rights reserved",
+      "url": "http://github.com/serrynaimo/getaroom_server"
+    }
+  ],
+  "scripts": {
+    "start": "./node_modules/forever/bin/forever start -w server.js",
+    "stop": "./node_modules/forever/bin/forever stop server.js"
+  },
+  "dependencies": {
+    "cors": "^2.3.1",
+    "crypto-js": "^3.1.2-3",
+    "express": "^4.4.3",
+    "forever": "^0.11.1",
+    "xmlhttprequest": "^1.6.0"
+  },
+  "engines": {
+    "node": "0.10.26",
+    "npm": "1.4.6"
+  },
+  "keywords": []
+}
