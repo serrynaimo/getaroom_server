@@ -44,10 +44,25 @@ var decodeId = function (id) {
         }, callback);
     },
     sendNotification = function(caller, endpointArn, room, callback) {
-        notificationTransport.sendMessage(endpointArn,
-            '{"ADM": "{\\"time_to_live\\": 60, \\"data\\": {\\"message\\": \\"' + caller + ' is calling ...\\",\\"room\\": \\"' + room + '\\"}}"}',
-            callback);
-    }
+        var notification = {
+            default: caller + ' is calling. Go to http://' + config.domain + '/' + room + ' to accept the call.',
+            ADM: JSON.stringify({
+                data: {
+                    message: caller + ' is calling ...',
+                    room: room
+                },
+                expiresAfter: 60
+            }),
+            GCM: JSON.stringify({
+                data: {
+                    message: caller + ' is calling ...',
+                    room: room
+                },
+                time_to_live: 60
+            })
+        };
+        notificationTransport.sendMessage(endpointArn, notification, callback);
+    };
 
 // Event subscriptions
 client.on("error", function(err) {

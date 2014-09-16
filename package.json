@@ -29,7 +29,7 @@
     "nodemailer": "^1.3.0",
     "nodemailer-ses-transport": "^1.1.0",
     "redis": "^0.12.1",
-    "sns-mobile": "0.0.3"
+    "sns-mobile": "git://github.com/serrynaimo/sns-mobile.git#master"
   },
   "engines": {
     "node": "0.10.26",
