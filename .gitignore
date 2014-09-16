@@ -86,4 +86,4 @@ results
 publish
 staging
 _site
-source/config/local.json
+config/local.js
