@@ -1,7 +1,3 @@
-// Environment
-var env = process.env.NODE_ENV || 'local',
-    port = process.env.PORT || 8001;
-
 // Require modules
 var express = require('express'),
     cors = require('cors'),
@@ -9,11 +5,19 @@ var express = require('express'),
     nodemailer = require('nodemailer'),
     ses = require('nodemailer-ses-transport'),
     sns = require('sns-mobile'),
-    extend = require('extend'),
-    config = require('./config/' + env + '.js');
+    extend = require('extend');
+
+// App/Express settings
+app = exports.app = express();
+
+app.set('port', process.env.PORT || 8001)
+    .set('env', process.env.NODE_ENV || 'local');
+
+app.use(cors());
 
 // Configuration and Constants
-var emailPattern = /^[a-z0-9_+.-]+@[a-z0-9.-]+\.[a-z0-9]{2,}$/;
+var config = require('./config/' + app.get('env') + '.js'),
+    emailPattern = /^[a-z0-9_+.-]+@[a-z0-9.-]+\.[a-z0-9]{2,}$/;
 
 // Transport initilization
 var notificationTransport = new sns(config.aws),
@@ -50,13 +54,6 @@ client.on("error", function(err) {
     console.log("Redis error: " + err);
 });
 
-// App/Express settings
-app = exports.app = express();
-
-app.set('port', port)
-    .set('env', env);
-
-app.use(cors());
 
 // Endpoint definitions
 app.get('/register', function (req, res) {
