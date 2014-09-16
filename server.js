@@ -10,7 +10,7 @@ var express = require('express'),
     ses = require('nodemailer-ses-transport'),
     sns = require('sns-mobile'),
     extend = require('extend'),
-    config = require('config/' + env + '.js');
+    config = require('./config/' + env + '.js');
 
 // Configuration and Constants
 var emailPattern = /^[a-z0-9_+.-]+@[a-z0-9.-]+\.[a-z0-9]{2,}$/;
