@@ -36,7 +36,7 @@ var decodeId = function (id) {
             replyTo: caller,
             to: callee,
             subject: "Join me on a video call right now",
-            text: "Hey there,\n\n" + caller + " is waiting for you on getaroom.io to be joined for a video call. It's a free tool and you don't need to sign up or install anything. Just follow this link and put pants on ;)\n\nhttp://getaroom.io/" + room + "\n\n"
+            text: "Hey there,\n\n" + caller + " is waiting for you on " + config.domain + " to be joined for a video call. It's a free tool and you don't need to sign up or install anything. Just follow this link and put pants on ;)\n\nhttp://" + config.domain + "/" + room + "\n\n"
         }, callback);
     },
     sendNotification = function(caller, endpointArn, room, callback) {

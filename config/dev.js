@@ -7,5 +7,6 @@ exports = {
       platform: 'android',
       platformApplicationArn: ''
     },
-    sendFromEmail: 'your@email.com'
+    sendFromEmail: 'someemail@domain.com',
+    domain: 'domain.com'
 }
