@@ -125,5 +125,5 @@ app.get('/call', function (req, res) {
 // Startup
 app.listen(app.get('port'));
 
-console.log('Get a room Server ' + app.get('env') +
-    ' API listening on port ' + app.get('port'));
+console.log('Server envorinment: ' + app.get('env') +
+    ' - API listening on port: ' + app.get('port'));
