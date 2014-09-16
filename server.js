@@ -1,3 +1,7 @@
+// Environment
+var env = process.env.NODE_ENV || 'local',
+    port = process.env.PORT || 8001;
+
 // Require modules
 var express = require('express'),
     cors = require('cors'),
@@ -6,7 +10,7 @@ var express = require('express'),
     ses = require('nodemailer-ses-transport'),
     sns = require('sns-mobile'),
     extend = require('extend'),
-    config = require('config.js');
+    config = require('config/' + env + '.js');
 
 // Configuration and Constants
 var emailPattern = /^[a-z0-9_+.-]+@[a-z0-9.-]+\.[a-z0-9]{2,}$/;
@@ -49,8 +53,8 @@ client.on("error", function(err) {
 // App/Express settings
 app = exports.app = express();
 
-app.set('port', process.env.PORT || 8001)
-    .set('env', process.env.NODE_ENV || 'local');
+app.set('port', port)
+    .set('env', env);
 
 app.use(cors());
 
