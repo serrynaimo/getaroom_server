@@ -77,13 +77,6 @@ app.get('/register', function (req, res) {
     console.log("Register Request: " + JSON.stringify(req.query));
 
     if(req.query.id && req.query.device) {
-
-        if(req.query.device === "Non-ADM-Device") {
-            console.log("Ignored errornous ADM device request.");
-            res.status(200).send('OK');
-            return;
-        }
-
         notificationTransport.addUser(req.query.device, null, function(err, endpointArn) {
             if(err) {
               console.log("SNS Error:" + err);
