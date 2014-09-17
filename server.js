@@ -49,14 +49,16 @@ var decodeId = function (id) {
             ADM: JSON.stringify({
                 data: {
                     message: caller + ' is calling ...',
-                    room: room
+                    room: room,
+                    email: caller
                 },
                 expiresAfter: 60
             }),
             GCM: JSON.stringify({
                 data: {
                     message: caller + ' is calling ...',
-                    room: room
+                    room: room,
+                    email: caller
                 },
                 time_to_live: 60
             })
