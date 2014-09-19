@@ -73,17 +73,22 @@ client.on("error", function(err) {
 
 
 // Endpoint definitions
-app.get('/register', function (req, res) {
-    console.log("Register Request: " + JSON.stringify(req.query));
-
+app.get('/Register', function (req, res) {
     if(req.query.id && req.query.device) {
+
+        if(req.query.device.indexOf('.adm-registration.') < 0) {
+            console.log("Did not register device request for '" + req.query.device + "'");
+            res.status(200).send('OK');
+            return;
+        }
+
         notificationTransport.addUser(req.query.device, null, function(err, endpointArn) {
             if(err) {
               console.log("SNS Error:" + err);
               return res.status(500).send('SNS Error');
             }
             client.set(req.query.id, endpointArn, redis.print);
-            console.log("Saved '" + req.query.device + "' with endpoint " + endpointArn);
+            console.log("Registered '" + req.query.device + "' with endpoint " + endpointArn);
             res.status(200).send('OK');
         });
     }
@@ -94,8 +99,6 @@ app.get('/register', function (req, res) {
 });
 
 app.get('/call', function (req, res) {
-    console.log("Call Request: " + JSON.stringify(req.query));
-
     var caller = decodeId(req.query.caller),
         callee = decodeId(req.query.callee);
 
