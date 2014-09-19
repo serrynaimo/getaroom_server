@@ -73,7 +73,7 @@ client.on("error", function(err) {
 
 
 // Endpoint definitions
-app.get('/Register', function (req, res) {
+app.get('/register', function (req, res) {
     if(req.query.id && req.query.device) {
 
         if(req.query.device.indexOf('.adm-registration.') < 0) {
