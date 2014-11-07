@@ -13,7 +13,8 @@ var express = require('express'),
 app = exports.app = express();
 
 app.set('port', process.env.PORT || 8001)
-    .set('env', process.env.NODE_ENV || 'local');
+    // .set('env', process.env.NODE_ENV || 'local');
+    .set('env', process.env.NODE_ENV || 'dev');
 
 app.use(cors());
 
@@ -134,8 +135,8 @@ app.get('/register', function (req, res) {
       var user = { userId: userId, cloud: cloud, endpointArn: regId };
       client.set( userId, JSON.stringify( user ), redis.print );
 
-      console.log( "Registered " + cloud + " device '" + req.query.device + 
-        "' with endpoint " + regId );
+      console.log( "Registered user " + userId + " with " + cloud + " device token and endpoint: "
+       + regId );
       res.status(200).send('OK');
     }
   }
