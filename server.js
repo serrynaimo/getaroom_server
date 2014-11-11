@@ -192,9 +192,9 @@ app.get('/call', function (req, res) {
         };
 
         // Send to the right cloud
-        if( cloud = 'ADM ')
+        if( cloud == 'ADM')
           sendADM(caller, endpointArn, req.query.caller, notificationCallback);
-        else if( cloud = 'GCM' )
+        else if( cloud == 'GCM' )
           sendGCM(caller, endpointArn, req.query.caller, notificationCallback);
       } else {
         // callee is not registered
