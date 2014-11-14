@@ -7,14 +7,15 @@ var express = require('express'),
     sns = require('sns-mobile'),
     gcm = require('node-gcm'),
     extend = require('extend'),
+    util = require('util'),
     settings = require('./config/config.js');
 
 // App/Express settings
 app = exports.app = express();
 
 app.set('port', process.env.PORT || 8001)
-    // .set('env', process.env.NODE_ENV || 'local');
-    .set('env', process.env.NODE_ENV || 'dev');
+  .set('env', process.env.NODE_ENV || 'local');
+  // .set('env', process.env.NODE_ENV || 'dev');
 
 app.use(cors());
 
@@ -49,23 +50,25 @@ var decodeId = function (id) {
             text: "Hey there,\n\n" + caller + " is waiting for you on " + config.domain + " to be joined for a video call. It's a free tool and you don't need to sign up or install anything. Just follow this link and put pants on ;)\n\nhttp://" + config.domain + "/" + room + "\n\n"
         }, callback);
     },
-    sendADM = function(caller, endpointArn, room, callback) {
+    sendADM = function( emailCaller, endpointArn, room, emailCallee, callback ) {
       // Create ADM message in JSON
       var notification = {
-        default: caller + ' is calling. Go to http://' + config.domain + '/' + room + ' to accept the call.',
+        default: emailCaller + ' is calling. Go to http://' + config.domain + '/' + room + ' to accept the call.',
         ADM: JSON.stringify({
           data: {
-            message: caller + ' is calling ...',
+            message: emailCaller + ' is calling ...',
             room: room,
-            email: caller
+            emailCaller: emailCaller,
+            emailCallee: emailCallee
           },
           expiresAfter: 60
         }),
         GCM: JSON.stringify({
           data: {
-            message: caller + ' is calling ...',
+            message: emailCaller + ' is calling ...',
             room: room,
-            email: caller
+            emailCaller: emailCaller,
+            emailCallee: emailCallee
           },
           time_to_live: 60
         })
@@ -74,15 +77,16 @@ var decodeId = function (id) {
       admTransport.sendMessage(endpointArn, notification, callback);
     },
     // Send a message via GCM
-    sendGCM = function( caller, endpointArn, room, callback ) {
+    sendGCM = function( emailCaller, endpointArn, room, emailCallee, callback ) {
       // Create GCM message in JSON.
       var message = new gcm.Message({
         collapseKey: 'Invitation',
         // delayWhileIdle: true,
         data: {
-          message: caller + ' is calling ...',
+          message: emailCaller + ' is calling ...',
           room: room,
-          email: caller
+          emailCaller: emailCaller,
+          emailCallee: emailCallee
         },
         timeToLive: 60
       });
@@ -91,7 +95,15 @@ var decodeId = function (id) {
       registrationIds.push( endpointArn );
       // Send message via GCM
       gcmTransport.send( message, registrationIds, 4, callback );
-    };
+    },
+    // Log with util.inspect, which returns a string representation of object.
+      // Shows non-enumerable properties.
+      // Recurse indefinitely into object.
+      // Output will be styled with ANSI color codes
+    logUI = function( logObject ) {
+      console.log( util.inspect(
+       logObject, { showHidden: true, depth: null, colors: true } ) );
+    }
 
 // Event subscriptions
 client.on("error", function(err) {
@@ -102,7 +114,8 @@ client.on("error", function(err) {
 app.get('/register', function (req, res) {
   var userId = req.query.id,
       regId = req.query.device,
-      cloud = req.query.cloud;
+      cloud = req.query.cloud,
+      emailUser = decodeId( userId );
 
   // A valid reqister call must have all 3 values.
   if( userId && regId && cloud ) {
@@ -135,7 +148,7 @@ app.get('/register', function (req, res) {
       var user = { userId: userId, cloud: cloud, endpointArn: regId };
       client.set( userId, JSON.stringify( user ), redis.print );
 
-      console.log( "Registered user " + userId + " with " + cloud + " device token and endpoint: "
+      console.log( "Registered user " + emailUser + " with id " + userId + ", via " + cloud + " device token and endpoint: "
        + regId );
       res.status(200).send('OK');
     }
@@ -146,26 +159,28 @@ app.get('/register', function (req, res) {
 });
 
 app.get('/call', function (req, res) {
-  var caller = decodeId(req.query.caller),
-      callee = decodeId(req.query.callee);
+  var idCaller = req.query.caller,
+      idCallee = req.query.callee,
+      emailCaller = decodeId( idCaller ),
+      emailCallee = decodeId( idCallee );
 
-  if(!caller.match(emailPattern) || !callee.match(emailPattern)) {
+  if(!emailCaller.match(emailPattern) || !emailCallee.match(emailPattern)) {
     res.status(400).send( 'Bad Request. Ensure you have id, device, cloud.' );
     return;
   }
 
-  client.get(req.query.callee, function( err, userStr ){
+  client.get(idCallee, function( err, userStr ){
     // Email is sent for following cases:
       // callee is not registered, i.e. not found in database.
       // callee is registered but redis has problem retrieving record.
       // sending of notification failed, for e.g. if registration id is wrong.
     var mailCallback = function(err) {
       if(err) {
-        console.log('SES Error: Email could not be delivered to ' + callee + '. ' + err);
+        console.log('SES Error: Email could not be delivered to ' + emailCallee + '. ' + err);
         res.status(500).send('Server Error');
       }
       else {
-        console.log("Sent Email to " + callee);
+        console.log("Sent Email to " + emailCallee);
         res.status(200).send('OK');
       }
     };
@@ -177,33 +192,35 @@ app.get('/call', function (req, res) {
         var cloud = user.cloud;
         var endpointArn = user.endpointArn;
 
-        // 2nd parameter in callback for ADM is messageId, for GCM is result.
         var notificationCallback = function(err, messageId) {
           if(err) {
-            console.log( 'SNS Error: ' + cloud + ' notification from ' + caller + 
-              '\ncould not be delivered to ' + callee + 
+            console.log( 'SNS Error: ' + cloud + ' notification from ' + emailCaller + 
+              '\ncould not be delivered to ' + emailCallee + 
               '\nat device endpoint ' + endpointArn + '.\n' + err );
-            sendEmail( caller, callee, req.query.caller, mailCallback );
+            sendEmail( emailCaller, emailCallee, idCaller, mailCallback );
           } else {
-            console.log( "Sent Notification from " + caller + " to " + callee + 
-              '\nat device endpoint ' + endpointArn + '\n' + messageId );
+            console.log( "Sent Notification from " + emailCaller + " to " + emailCallee + 
+              '\nat device endpoint ' + endpointArn + '\nmessageId:\n' );
+            // 2nd parameter (messageId) in callback for may contain canonical id(s) for GCM,
+              // If the current device id used is not the latest registered device id.
+            logUI( messageId );
             res.status(200).send('OK');
           }
         };
 
         // Send to the right cloud
         if( cloud == 'ADM')
-          sendADM(caller, endpointArn, req.query.caller, notificationCallback);
+          sendADM(emailCaller, endpointArn, idCaller, emailCallee, notificationCallback);
         else if( cloud == 'GCM' )
-          sendGCM(caller, endpointArn, req.query.caller, notificationCallback);
+          sendGCM(emailCaller, endpointArn, idCaller, emailCallee, notificationCallback);
       } else {
         // callee is not registered
-        sendEmail( caller, callee, req.query.caller, mailCallback );
+        sendEmail( emailCaller, emailCallee, idCaller, mailCallback );
       }
     } else {
       // callee is registered but redis has problem retrieving record,
         // e.g. if record is not a string.
-      sendEmail( caller, callee, req.query.caller, mailCallback );
+      sendEmail( emailCaller, emailCallee, idCaller, mailCallback );
     }
   });
 });
