@@ -161,6 +161,7 @@ app.get('/register', function (req, res) {
 app.get('/call', function (req, res) {
   var idCaller = req.query.caller,
       idCallee = req.query.callee,
+      actionType = req.query.action,
       emailCaller = decodeId( idCaller ),
       emailCallee = decodeId( idCallee );
 
@@ -169,60 +170,74 @@ app.get('/call', function (req, res) {
     return;
   }
 
-  client.get(idCallee, function( err, userStr ){
-    // Email is sent for following cases:
-      // callee is not registered, i.e. not found in database.
-      // callee is registered but redis has problem retrieving record.
-      // sending of notification failed, for e.g. if registration id is wrong.
-    var mailCallback = function(err) {
-      if(err) {
-        console.log('SES Error: Email could not be delivered to ' + emailCallee + '. ' + err);
-        res.status(500).send('Server Error');
-      }
-      else {
-        console.log("Sent Email to " + emailCallee);
-        res.status(200).send('OK');
-      }
-    };
+  if( actionType == 'inviteCancel' ) {
+    // Caller is cancelling the invite.
+    // Push notification to Callee.
+    
+  } else if( actionType == 'inviteAccept' ) {
+    // Callee has accepted invite.
+    // Push notification to Caller.
+    
+  } else if( actionType == 'inviteDecline' ) {
+    // Callee has declined invite.
+    // Push notification to Caller.
+    
+  } else {
+    client.get(idCallee, function( err, userStr ){
+      // Email is sent for following cases:
+        // callee is not registered, i.e. not found in database.
+        // callee is registered but redis has problem retrieving record.
+        // sending of notification failed, for e.g. if registration id is wrong.
+      var mailCallback = function(err) {
+        if(err) {
+          console.log('SES Error: Email could not be delivered to ' + emailCallee + '. ' + err);
+          res.status(500).send('Server Error');
+        }
+        else {
+          console.log("Sent Email to " + emailCallee);
+          res.status(200).send('OK');
+        }
+      };
 
-    if( !err ) {
-    // If callee is registered (can be found in database) and successfully retrieved.
-      if( userStr != 'nil' ) {
-        var user = JSON.parse( userStr );
-        var cloud = user.cloud;
-        var endpointArn = user.endpointArn;
+      if( !err ) {
+      // If callee is registered (can be found in database) and successfully retrieved.
+        if( userStr != 'nil' ) {
+          var user = JSON.parse( userStr );
+          var cloud = user.cloud;
+          var endpointArn = user.endpointArn;
 
-        var notificationCallback = function(err, messageId) {
-          if(err) {
-            console.log( 'SNS Error: ' + cloud + ' notification from ' + emailCaller + 
-              '\ncould not be delivered to ' + emailCallee + 
-              '\nat device endpoint ' + endpointArn + '.\n' + err );
-            sendEmail( emailCaller, emailCallee, idCaller, mailCallback );
-          } else {
-            console.log( "Sent Notification from " + emailCaller + " to " + emailCallee + 
-              '\nat device endpoint ' + endpointArn + '\nmessageId:\n' );
-            // 2nd parameter (messageId) in callback for may contain canonical id(s) for GCM,
-              // If the current device id used is not the latest registered device id.
-            logUI( messageId );
-            res.status(200).send('OK');
-          }
-        };
+          var notificationCallback = function(err, messageId) {
+            if(err) {
+              console.log( 'SNS Error: ' + cloud + ' notification from ' + emailCaller + 
+                '\ncould not be delivered to ' + emailCallee + 
+                '\nat device endpoint ' + endpointArn + '.\n' + err );
+              sendEmail( emailCaller, emailCallee, idCaller, mailCallback );
+            } else {
+              console.log( "Sent Notification from " + emailCaller + " to " + emailCallee + 
+                '\nat device endpoint ' + endpointArn + '\nmessageId:\n' );
+              // 2nd parameter (messageId) in callback for may contain canonical id(s) for GCM,
+                // If the current device id used is not the latest registered device id.
+              logUI( messageId );
+              res.status(200).send('OK');
+            }
+          };
 
-        // Send to the right cloud
-        if( cloud == 'ADM')
-          sendADM(emailCaller, endpointArn, idCaller, emailCallee, notificationCallback);
-        else if( cloud == 'GCM' )
-          sendGCM(emailCaller, endpointArn, idCaller, emailCallee, notificationCallback);
+          // Send to the right cloud
+          if( cloud == 'ADM')
+            sendADM(emailCaller, endpointArn, idCaller, emailCallee, notificationCallback);
+          else if( cloud == 'GCM' )
+            sendGCM(emailCaller, endpointArn, idCaller, emailCallee, notificationCallback);
+        } else {
+          // callee is not registered
+          sendEmail( emailCaller, emailCallee, idCaller, mailCallback );
+        }
       } else {
-        // callee is not registered
+        // callee is registered but redis has problem retrieving record,
+          // e.g. if record is not a string.
         sendEmail( emailCaller, emailCallee, idCaller, mailCallback );
       }
-    } else {
-      // callee is registered but redis has problem retrieving record,
-        // e.g. if record is not a string.
-      sendEmail( emailCaller, emailCallee, idCaller, mailCallback );
-    }
-  });
+    });
+  }
 });
 
 // Startup
