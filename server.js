@@ -81,7 +81,9 @@ var decodeId = function (id) {
       return undefined;
     },
     sendEmail = function( caller, callee, room, callback, actionType ) {
-      var emailText;
+      var emailText, subjectText, emailSender, emailReceiver;
+      emailSender = caller;
+      emailReceiver = callee;
       switch( actionType ) {
         case ActionType.INVITE_INVITE:
           emailText = 
@@ -89,22 +91,30 @@ var decodeId = function (id) {
             " to be joined for a video call. It's a free tool and you don't need to sign up " + 
             "or install anything. Just follow this link and put pants on ;)\n\n" +
             "http://" + config.domain + "/" + room + "\n\n";
+          subjectText = "Join me on a video call right now";
           break;
         case ActionType.INVITE_CANCEL:
           emailText = caller + " has canceled the video call they started.";
+          subjectText = emailText;
           break;
         case ActionType.INVITE_ACCEPT:
           emailText = callee + " has accepted the video call you started.";
+          emailSender = callee;
+          emailReceiver = caller;
+          subjectText = emailText;
           break;
         case ActionType.INVITE_DECLINE:
           emailText = callee + " has declined the video call you started.";
+          emailSender = callee;
+          emailReceiver = caller;
+          subjectText = emailText;
           break;
       }
         mailTransport.sendMail({
-            from: caller + ' <' + config.sendFromEmail + '>',
-            replyTo: caller,
-            to: callee,
-            subject: "Join me on a video call right now",
+            from: emailSender + ' <' + config.sendFromEmail + '>',
+            replyTo: emailSender,
+            to: emailReceiver,
+            subject: subjectText,
             text: emailText
         }, callback);
     },
