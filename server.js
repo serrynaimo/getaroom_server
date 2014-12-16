@@ -110,12 +110,13 @@ var decodeId = function (id) {
     },
     sendCloud = function( emailCaller, endpointArn, room, emailCallee, callback, cloud, action ) {
       var dataCloud = {
-        message: emailCaller + ' is calling ...',
-        room: room,
-        emailCaller: emailCaller,
-        emailCallee: emailCallee,
-        inviteType: action.value,
+        INVITATION_MESSAGE: emailCaller + ' is calling ...',
+        INVITATION_ROOM: room,
+        INVITATION_EMAIL_CALLER: emailCaller,
+        INVITATION_EMAIL_CALLEE: emailCallee,
+        INVITATION_TYPE: action.value,
       };
+      console.log( 'Data to be sent:\n' + JSON.stringify( dataCloud ) );
       switch ( cloud ) {
         case CloudType.ADM:
           // Create ADM message in JSON
