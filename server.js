@@ -118,15 +118,31 @@ var decodeId = function (id) {
             text: emailText
         }, callback);
     },
-    sendCloud = function( emailCaller, endpointArn, room, emailCallee, callback, cloud, action ) {
+    sendCloud = function( emailCaller, endpointArn, room, emailCallee, callback, cloud, actionType ) {
       var dataCloud = {
-        INVITATION_MESSAGE: emailCaller + ' is calling ...',
+        INVITATION_MESSAGE: '',
         INVITATION_ROOM: room,
         INVITATION_EMAIL_CALLER: emailCaller,
         INVITATION_EMAIL_CALLEE: emailCallee,
-        INVITATION_TYPE: action.value,
+        INVITATION_TYPE: actionType.value,
       };
-      console.log( 'Data to be sent:\n' + JSON.stringify( dataCloud ) );
+      // Set the right message
+      switch( actionType ) {
+        case ActionType.INVITE_INVITE:
+          dataCloud.INVITATION_MESSAGE = emailCaller + ' is calling ...';
+          break;
+        case ActionType.INVITE_CANCEL:
+          dataCloud.INVITATION_MESSAGE = emailCaller + " has canceled the video call they started.";
+          break;
+        case ActionType.INVITE_ACCEPT:
+          dataCloud.INVITATION_MESSAGE = emailCallee + " has accepted the video call you started.";
+          break;
+        case ActionType.INVITE_DECLINE:
+          dataCloud.INVITATION_MESSAGE = emailCallee + " has declined the video call you started.";
+          break;
+      }
+
+      console.log( '[' + ( new Date() ).toLocaleString() + '] Data to be sent:\n' + JSON.stringify( dataCloud ) );
       switch ( cloud ) {
         case CloudType.ADM:
           // Create ADM message in JSON
@@ -245,32 +261,52 @@ app.get('/call', function (req, res) {
   }
 
   // Check registration status of callee.
-  var regStatus,
+  var cloudReceiver,
+      regStatus,
       user;
 
-  client.get( idCallee, function( err, userStr ){
-    // Callee may have following registration status:
-      // callee is registered with proper record in database.
-      // callee is not registered, i.e. not found in database.
-      // callee is registered but redis has problem retrieving record.
+  // Set the right cloudReceiver
+  switch( actionType ) {
+    case ActionType.INVITE_INVITE:
+      cloudReceiver = idCallee;
+      break;
+    case ActionType.INVITE_CANCEL:
+      cloudReceiver = idCallee;
+      break;
+    case ActionType.INVITE_ACCEPT:
+      cloudReceiver = idCaller;
+      break;
+    case ActionType.INVITE_DECLINE:
+      cloudReceiver = idCaller;
+      break;
+  }
+
+  console.log( 'cloudReceiver is: ' + cloudReceiver + '.' );
+
+  client.get( cloudReceiver, function( err, userStr ){
+    // CloudReceiver may have following registration status:
+      // cloudReceiver is registered with proper record in database.
+      // cloudReceiver is not registered, i.e. not found in database.
+      // cloudReceiver is registered but redis has problem retrieving record.
 
     if( !err ) {
-    // If callee is registered (can be found in database) and successfully retrieved.
+    // If cloudReceiver is registered (can be found in database) and successfully retrieved.
+      console.log( '[REDIS] userStr is: ' + userStr + '.' );
       if( userStr != 'nil' ) {
         regStatus = RegStatus.REGISTERED;
         user = JSON.parse( userStr );
-        logUI( 'RegStatus: Callee userStr found in db:\n' + userStr );
-        logUI( 'RegStatus: Callee user object:\n' + user );
+        logUI( "RegStatus: cloudReceiver userStr found in db:\n" + userStr );
+        logUI( "RegStatus: cloudReceiver user object:\n" + user );
       } else {
-        // callee is not registered
+        // cloudReceiver is not registered
         regStatus = RegStatus.UNREGISTERED;
-        console.log( 'RegStatus: Callee NOT found in db.' );
+        console.log( 'RegStatus: cloudReceiver NOT found in db.' );
       }
     } else {
-      // callee is registered but redis has problem retrieving record,
+      // cloudReceiver is registered but redis has problem retrieving record,
         // e.g. if record is not a string.
       regStatus = RegStatus.RECORD_ERROR;
-      console.log( 'RegStatus: Callee found in db, but there is a problem retrieving record:\n' +
+      console.log( 'RegStatus: cloudReceiver found in db, but there is a problem retrieving record:\n' +
         err );
     }
 
@@ -309,7 +345,8 @@ app.get('/call', function (req, res) {
               '\nat device endpoint ' + endpointArn + '.\n' + err );
             sendEmail( emailCaller, emailCallee, idCaller, mailCallback, actionType );
           } else {
-            console.log( "Sent Notification from " + emailCaller + " to " + emailCallee + 
+            console.log( '[' + ( new Date() ).toLocaleString() + '] Sent Notification from ' + 
+              emailCaller + " to " + emailCallee + 
               '\nat device endpoint ' + endpointArn + '\nmessageId:\n' );
             // 2nd parameter (messageId) in callback for may contain canonical id(s) for GCM,
               // If the current device id used is not the latest registered device id.
