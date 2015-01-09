@@ -89,7 +89,7 @@ var decodeId = function (id) {
           emailText = 
             "Hey there,\n\n" + caller + " is waiting for you on " + config.domain + 
             " to be joined for a video call. It's a free tool and you don't need to sign up " + 
-            "or install anything. Just follow this link and put pants on ;)\n\n" +
+            "or install anything. Just follow this link and you're all set :)\n\n" +
             "http://" + config.domain + "/" + room + "\n\n";
           subjectText = "Join me on a video call right now";
           break;
@@ -292,7 +292,7 @@ app.get('/call', function (req, res) {
     if( !err ) {
     // If cloudReceiver is registered (can be found in database) and successfully retrieved.
       console.log( '[REDIS] userStr is: ' + userStr + '.' );
-      if( userStr != 'nil' ) {
+      if( userStr != null && userStr != 'nil' ) {
         regStatus = RegStatus.REGISTERED;
         user = JSON.parse( userStr );
         logUI( "RegStatus: cloudReceiver userStr found in db:\n" + userStr );
