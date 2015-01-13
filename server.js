@@ -9,7 +9,6 @@ var express = require('express'),
     gcm = require('node-gcm'),
     extend = require('extend'),
     util = require('util'),
-    settings = require('./config/config.js');
 
 // App/Express settings
 app = exports.app = express();
@@ -26,7 +25,7 @@ var config = require('./config/' + app.get('env') + '.js'),
 
 // Transport initilization
 var admTransport = new sns(config.aws),
-    gcmTransport = new gcm.Sender(settings.googleSettings.apiKey),
+    gcmTransport = new gcm.Sender(config.google.apiKey),
     mailTransport = nodemailer.createTransport(ses(extend(config.aws, {
         region: 'us-west-2', // ap-southeast-1 not supported
         rateLimit: 5
