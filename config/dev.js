@@ -7,6 +7,11 @@ module.exports = {
       platform: 'android',
       platformApplicationArn: ''
     },
+    google: {
+      apiKey: '',
+      projectId: '',
+      projectNo: ''
+    },
     sendFromEmail: 'someemail@domain.com',
     domain: 'domain.com'
 }
